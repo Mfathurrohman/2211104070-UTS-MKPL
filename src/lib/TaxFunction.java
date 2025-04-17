@@ -1,44 +1,48 @@
 package lib;
 
-public class TaxFunction {
+public final class TaxFunction {
+    private static final int PTKP_BASE       = 54_000_000;
+    private static final int PTKP_MARRIED    = 4_500_000;
+    private static final int PTKP_CHILD      = 4_500_000;
+    private static final double TAX_RATE     = 0.05;
+    private static final int MAX_CHILDREN    = 3;
 
-	
-	/**
-	 * Fungsi untuk menghitung jumlah pajak penghasilan pegawai yang harus dibayarkan setahun.
-	 * 
-	 * Pajak dihitung sebagai 5% dari penghasilan bersih tahunan (gaji dan pemasukan bulanan lainnya dikalikan jumlah bulan bekerja dikurangi pemotongan) dikurangi penghasilan tidak kena pajak.
-	 * 
-	 * Jika pegawai belum menikah dan belum punya anak maka penghasilan tidak kena pajaknya adalah Rp 54.000.000.
-	 * Jika pegawai sudah menikah maka penghasilan tidak kena pajaknya ditambah sebesar Rp 4.500.000.
-	 * Jika pegawai sudah memiliki anak maka penghasilan tidak kena pajaknya ditambah sebesar Rp 4.500.000 per anak sampai anak ketiga.
-	 * 
-	 */
-	
-	
-	public static int calculateTax(int monthlySalary, int otherMonthlyIncome, int numberOfMonthWorking, int deductible, boolean isMarried, int numberOfChildren) {
-		
-		int tax = 0;
-		
-		if (numberOfMonthWorking > 12) {
-			System.err.println("More than 12 month working per year");
-		}
-		
-		if (numberOfChildren > 3) {
-			numberOfChildren = 3;
-		}
-		
-		if (isMarried) {
-			tax = (int) Math.round(0.05 * (((monthlySalary + otherMonthlyIncome) * numberOfMonthWorking) - deductible - (54000000 + 4500000 + (numberOfChildren * 1500000))));
-		}else {
-			tax = (int) Math.round(0.05 * (((monthlySalary + otherMonthlyIncome) * numberOfMonthWorking) - deductible - 54000000));
-		}
-		
-		if (tax < 0) {
-			return 0;
-		}else {
-			return tax;
-		}
-			 
-	}
-	
+    private TaxFunction() { /* utility class */ }
+
+    public static int calculateTax(
+        int monthlySalary,
+        int otherMonthlyIncome,
+        int numberOfMonthWorking,
+        int deductible,
+        boolean isMarried,
+        int numberOfChildren
+    ) {
+        int annualIncome   = computeAnnualIncome(monthlySalary, otherMonthlyIncome, numberOfMonthWorking);
+        int ptkp           = computePTKP(isMarried, numberOfChildren);
+        int taxableIncome  = annualIncome - deductible - ptkp;
+
+        if (taxableIncome <= 0) {
+            return 0;
+        }
+
+        return applyTaxRate(taxableIncome);
+    }
+
+    private static int computeAnnualIncome(int salary, int otherIncome, int months) {
+        return (salary + otherIncome) * months;
+    }
+
+    private static int computePTKP(boolean married, int children) {
+        int total = PTKP_BASE;
+        if (married) {
+            total += PTKP_MARRIED;
+        }
+        int validChildren = Math.min(children, MAX_CHILDREN);
+        total += PTKP_CHILD * validChildren;
+        return total;
+    }
+
+    private static int applyTaxRate(int income) {
+        return (int) Math.round(TAX_RATE * income);
+    }
 }
